@@ -10,19 +10,21 @@
       <aside class="sidebar">
         <div class="sidebar-header">分类</div>
         <ul class="cate-list-menu">
-          <!-- 所有书签项，本身不支持放置，因为它不是具体分类 -->
+          <!-- 所有书签项 -->
           <li 
             class="cate-item" 
             :class="{ active: selectedCategoryId === null }"
             @click="selectedCategoryId = null"
           >
-            <span>
-              <svg class="svg-icon menu-icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
-              所有书签
-            </span>
+            <div class="cate-content-wrapper">
+              <span class="cate-name-text">
+                <svg class="svg-icon menu-icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                所有书签
+              </span>
+            </div>
           </li>
           
-          <!-- 具体分类项，支持拖拽放入 -->
+          <!-- 具体分类项，支持拖拽放入与动画 -->
           <li 
             v-for="cate in cateList" 
             :key="cate.id" 
@@ -36,10 +38,57 @@
             @dragleave="onDragLeave"
             @drop="onDrop($event, cate.id)"
           >
-            <span class="cate-name">
-              <svg class="svg-icon menu-icon" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
-              {{ cate.name }}
-            </span>
+            <div class="cate-content-wrapper">
+              <!-- 原本文本 -->
+              <span 
+                class="cate-name-text" 
+                :class="{ 'hide-text': dragHoverCategoryId === cate.id || eatingCategoryId === cate.id }"
+              >
+                <svg class="svg-icon menu-icon" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+                {{ cate.name }}
+              </span>
+              
+              <!-- 像素吃豆人动画组件 -->
+              <div 
+                class="pacman-container" 
+                :class="{ 
+                  'show-pacman': dragHoverCategoryId === cate.id || eatingCategoryId === cate.id,
+                  'eating': eatingCategoryId === cate.id
+                }"
+              >
+                <svg class="pixel-pacman" viewBox="0 0 13 13" shape-rendering="crispEdges">
+                  <!-- 身体固定部分 -->
+                  <rect x="4" y="0" width="5" height="1" fill="#DDA142" />
+                  <rect x="2" y="1" width="9" height="1" fill="#DDA142" />
+                  <rect x="1" y="2" width="11" height="1" fill="#DDA142" />
+                  <rect x="0" y="3" width="13" height="1" fill="#DDA142" />
+                  <rect x="0" y="9" width="13" height="1" fill="#DDA142" />
+                  <rect x="1" y="10" width="11" height="1" fill="#DDA142" />
+                  <rect x="2" y="11" width="9" height="1" fill="#DDA142" />
+                  <rect x="4" y="12" width="5" height="1" fill="#DDA142" />
+                  
+                  <!-- 会根据张闭嘴动画隐藏/显示的嘴巴部分 -->
+                  <rect x="0" y="4" width="11" height="1" fill="#DDA142" />
+                  <rect x="11" y="4" width="2" height="1" class="pac-jaw-top" fill="#DDA142" />
+                  
+                  <rect x="0" y="5" width="8" height="1" fill="#DDA142" />
+                  <rect x="8" y="5" width="5" height="1" class="pac-jaw-top" fill="#DDA142" />
+                  
+                  <rect x="0" y="6" width="6" height="1" fill="#DDA142" />
+                  <rect x="6" y="6" width="7" height="1" class="pac-jaw-mid" fill="#DDA142" />
+                  
+                  <rect x="0" y="7" width="8" height="1" fill="#DDA142" />
+                  <rect x="8" y="7" width="5" height="1" class="pac-jaw-bottom" fill="#DDA142" />
+                  
+                  <rect x="0" y="8" width="11" height="1" fill="#DDA142" />
+                  <rect x="11" y="8" width="2" height="1" class="pac-jaw-bottom" fill="#DDA142" />
+                  
+                  <!-- 眼睛 -->
+                  <rect x="7" y="2" width="2" height="2" fill="#000" />
+                </svg>
+              </div>
+            </div>
+
             <div class="cate-actions">
               <span class="action-icon" @click.stop="openEditCate(cate)" title="编辑">
                 <svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
@@ -128,6 +177,56 @@
         <button class="primary-btn small-btn" @click="saveEditBook">保存</button>
       </template>
     </el-dialog>
+
+    <!-- 右下角吃豆人垃圾桶 -->
+    <div 
+      class="trash-container"
+      :class="{
+        'dragging-active': isDraggingBookmark,
+        'drag-over': dragHoverTrash,
+        'eating': eatingTrash
+      }"
+      @dragover.prevent="dragHoverTrash = true"
+      @dragleave="dragHoverTrash = false"
+      @drop="onTrashDrop"
+    >
+      <div class="trash-wrapper">
+        <!-- 像素垃圾桶 (常态) -->
+        <svg class="pixel-trash" :class="{ 'hide': dragHoverTrash || eatingTrash }" viewBox="0 0 13 13" shape-rendering="crispEdges">
+          <rect x="4" y="2" width="5" height="1" fill="#bbbbbb" />
+          <rect x="2" y="3" width="9" height="1" fill="#bbbbbb" />
+          <rect x="3" y="4" width="1" height="7" fill="#bbbbbb" />
+          <rect x="9" y="4" width="1" height="7" fill="#bbbbbb" />
+          <rect x="3" y="11" width="7" height="1" fill="#bbbbbb" />
+          <rect x="5" y="5" width="1" height="5" fill="#bbbbbb" />
+          <rect x="7" y="5" width="1" height="5" fill="#bbbbbb" />
+        </svg>
+        
+        <!-- 镜像像素吃豆人 (觉醒态) -->
+        <svg class="pixel-pacman flipped" :class="{ 'show': dragHoverTrash || eatingTrash }" viewBox="0 0 13 13" shape-rendering="crispEdges">
+          <rect x="4" y="0" width="5" height="1" fill="#DDA142" />
+          <rect x="2" y="1" width="9" height="1" fill="#DDA142" />
+          <rect x="1" y="2" width="11" height="1" fill="#DDA142" />
+          <rect x="0" y="3" width="13" height="1" fill="#DDA142" />
+          <rect x="0" y="9" width="13" height="1" fill="#DDA142" />
+          <rect x="1" y="10" width="11" height="1" fill="#DDA142" />
+          <rect x="2" y="11" width="9" height="1" fill="#DDA142" />
+          <rect x="4" y="12" width="5" height="1" fill="#DDA142" />
+          
+          <rect x="0" y="4" width="11" height="1" fill="#DDA142" />
+          <rect x="11" y="4" width="2" height="1" class="pac-jaw-top" fill="#DDA142" />
+          <rect x="0" y="5" width="8" height="1" fill="#DDA142" />
+          <rect x="8" y="5" width="5" height="1" class="pac-jaw-top" fill="#DDA142" />
+          <rect x="0" y="6" width="6" height="1" fill="#DDA142" />
+          <rect x="6" y="6" width="7" height="1" class="pac-jaw-mid" fill="#DDA142" />
+          <rect x="0" y="7" width="8" height="1" fill="#DDA142" />
+          <rect x="8" y="7" width="5" height="1" class="pac-jaw-bottom" fill="#DDA142" />
+          <rect x="0" y="8" width="11" height="1" fill="#DDA142" />
+          <rect x="11" y="8" width="2" height="1" class="pac-jaw-bottom" fill="#DDA142" />
+          <rect x="7" y="2" width="2" height="2" fill="#000" />
+        </svg>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -147,7 +246,14 @@ const userId = currentUser.id;
 const cateList = ref([]);
 const bookList = ref([]);
 const selectedCategoryId = ref(null);
+
+// Drag & Drop Animation State
+const isDraggingBookmark = ref(false);
 const dragHoverCategoryId = ref(null);
+const eatingCategoryId = ref(null);
+
+const dragHoverTrash = ref(false);
+const eatingTrash = ref(false);
 
 const cateName = ref("");
 const bookTitle = ref("");
@@ -173,20 +279,20 @@ const filteredBookList = computed(() => {
 
 // Drag and Drop Handlers
 const onDragStart = (event, book) => {
-  // 必须设置数据，Firefox 等浏览器才允许拖拽
   event.dataTransfer.setData('text/plain', book.id);
   event.dataTransfer.effectAllowed = 'move';
-  // 可以在这里设置拖动时的透明度等效果
   event.target.style.opacity = '0.5';
+  isDraggingBookmark.value = true;
 };
 
 const onDragEnd = (event) => {
   event.target.style.opacity = '1';
   dragHoverCategoryId.value = null;
+  dragHoverTrash.value = false;
+  isDraggingBookmark.value = false;
 };
 
 const onDragOver = (cateId) => {
-  // 只在不同分类间拖拽才高亮
   dragHoverCategoryId.value = cateId;
 };
 
@@ -203,19 +309,51 @@ const onDrop = async (event, targetCateId) => {
   const book = bookList.value.find(b => b.id === bookId);
   
   if (book && book.categoryId !== targetCateId) {
-    // 乐观更新（提前在前端修改，体验更流畅）
-    book.categoryId = targetCateId;
+    // 触发吃豆人吞咽动画
+    eatingCategoryId.value = targetCateId;
     
-    // 调用后端保存
+    // 延迟执行保存，等待动画结束
+    setTimeout(async () => {
+      eatingCategoryId.value = null; 
+      book.categoryId = targetCateId; 
+      
+      try {
+        await request.post("/bookmark/add", book);
+        ElMessage.success("书签已移动");
+        loadData();
+      } catch (e) {
+        ElMessage.error("移动失败");
+        loadData(); 
+      }
+    }, 600); 
+  }
+};
+
+const onTrashDrop = async (event) => {
+  dragHoverTrash.value = false;
+  const bookIdStr = event.dataTransfer.getData('text/plain');
+  if (!bookIdStr) return;
+  
+  const bookId = parseInt(bookIdStr, 10);
+  
+  // 触发垃圾桶吞噬动画
+  eatingTrash.value = true;
+  
+  setTimeout(async () => {
+    eatingTrash.value = false; 
+    
+    // 乐观删除
+    bookList.value = bookList.value.filter(b => b.id !== bookId);
+    
     try {
-      await request.post("/bookmark/add", book);
-      ElMessage.success("书签已移动");
+      await request.post("/bookmark/delete", { id: bookId });
+      ElMessage.success("书签已粉碎");
       loadData();
     } catch (e) {
-      ElMessage.error("移动失败");
-      loadData(); // 恢复原始状态
+      ElMessage.error("删除失败");
+      loadData(); 
     }
-  }
+  }, 600);
 };
 
 
@@ -393,7 +531,8 @@ onMounted(() => {
   overflow-y: auto;
 }
 .cate-item {
-  padding: 12px 15px;
+  height: 48px; /* 统一高度，以更高的那个为准 */
+  padding: 0 15px; /* 取消上下 padding，靠 align-items 居中 */
   margin-bottom: 5px;
   border-radius: 8px;
   cursor: pointer;
@@ -414,22 +553,100 @@ onMounted(() => {
 .cate-item.drag-over {
   background-color: #EAEAEA;
   border: 1px dashed #333333;
-  transform: scale(1.02);
 }
-.cate-name {
+
+/* --- 吃豆人动画容器与文本 --- */
+.cate-content-wrapper {
   flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
   display: flex;
   align-items: center;
+  position: relative;
+  overflow: hidden; /* 防止缩放导致的抖动溢出 */
+  height: 100%; /* 占满高度以保证居中对齐 */
 }
+.cate-name-text {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transform-origin: left center;
+}
+/* 当悬浮或正在吃时，隐藏文字，向左缩小滑动 */
+.cate-name-text.hide-text {
+  opacity: 0;
+  transform: scale(0.5) translateX(-20px);
+}
+
+.pacman-container {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%) translateX(-20px) scale(0.5);
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  pointer-events: none; /* 穿透鼠标事件，保证 drop 触发 */
+}
+/* 悬浮时，吃豆人向右放大滑出 */
+.pacman-container.show-pacman {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0) scale(1.3);
+}
+/* 放下时触发吃豆人前扑 */
+.pacman-container.eating {
+  opacity: 1;
+  animation: pounce 0.6s ease-in-out forwards;
+}
+
+/* 像素吃豆人 SVG 样式 */
+.pixel-pacman {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+/* 默认张嘴状态，隐藏上下颚及缝隙 */
+.pac-jaw-top, .pac-jaw-bottom, .pac-jaw-mid {
+  opacity: 0; 
+}
+
+/* 吞咽动画：嘴巴开合 */
+.eating .pixel-pacman .pac-jaw-top,
+.eating .pixel-pacman .pac-jaw-bottom {
+  animation: chomp-jaw 0.15s infinite alternate;
+}
+.eating .pixel-pacman .pac-jaw-mid {
+  animation: chomp-mid 0.15s infinite alternate;
+}
+
+@keyframes chomp-jaw {
+  0%, 30% { opacity: 0; }
+  70%, 100% { opacity: 1; }
+}
+@keyframes chomp-mid {
+  0%, 30% { opacity: 0; fill: #DDA142; }
+  70%, 100% { opacity: 1; fill: #222; }
+}
+/* 吞咽前扑位移动画 (向右扑) */
+@keyframes pounce {
+  0% { transform: translateY(-50%) translateX(0) scale(1.3); }
+  25% { transform: translateY(-50%) translateX(-5px) scale(1.3); } /* 蓄力向后 */
+  50% { transform: translateY(-50%) translateX(10px) scale(1.6); }  /* 向前猛扑 */
+  75% { transform: translateY(-50%) translateX(10px) scale(1.6); opacity: 1; }
+  100% { transform: translateY(-50%) translateX(10px) scale(0.5); opacity: 0; }
+}
+
 .cate-actions {
-  display: none;
+  display: flex;
   gap: 8px;
+  opacity: 0; /* 默认透明，避免 display:none 导致的布局高度塌陷 */
+  visibility: hidden; /* 防止不可见时还能点击 */
+  transition: opacity 0.2s;
 }
 .cate-item:hover .cate-actions {
-  display: flex;
+  opacity: 1;
+  visibility: visible;
 }
 .action-icon {
   opacity: 0.5;
@@ -575,6 +792,87 @@ onMounted(() => {
   stroke: #dddddd;
   stroke-width: 1.5;
 }
+
+/* --- 右下角吃豆人垃圾桶 --- */
+.trash-container {
+  position: fixed;
+  right: 30px;
+  bottom: 30px;
+  width: 120px;
+  height: 120px;
+  background-color: white;
+  border-radius: 50%;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  opacity: 0.5; /* 默认半透明 */
+  z-index: 100;
+  border: 2px solid transparent;
+}
+.trash-container.dragging-active {
+  transform: scale(1.1);
+  opacity: 1;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+  border: 2px dashed #dddddd;
+}
+.trash-container.drag-over {
+  transform: scale(1.3);
+  background-color: #fcfcfc; /* 稍亮一点 */
+  border-color: #DDA142; /* 黄色高亮 */
+  box-shadow: 0 8px 25px rgba(221, 161, 66, 0.3);
+}
+.trash-container.eating {
+  transform: scale(1.3);
+  background-color: #fcfcfc;
+  border-color: #DDA142;
+  animation: pounce-left 0.6s ease-in-out forwards;
+}
+
+.trash-wrapper {
+  position: relative;
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pixel-trash {
+  width: 56px;
+  height: 56px;
+  position: absolute;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transform-origin: center bottom;
+}
+.pixel-trash.hide {
+  opacity: 0;
+  transform: scale(0.2);
+}
+
+.trash-wrapper .pixel-pacman {
+  width: 56px;
+  height: 56px;
+  position: absolute;
+  opacity: 0;
+  transform: scale(0.2) scaleX(-1); /* 默认隐藏且翻转 */
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.trash-wrapper .pixel-pacman.show {
+  opacity: 1;
+  transform: scale(1.3) scaleX(-1); /* 翻转使得吃豆人朝左 */
+}
+
+/* 垃圾桶向左扑咬动画 */
+@keyframes pounce-left {
+  0% { transform: scale(1.3) translateX(0); }
+  25% { transform: scale(1.3) translateX(4px); } /* 蓄力向右 */
+  50% { transform: scale(1.5) translateX(-8px); }  /* 向左前扑咬 */
+  75% { transform: scale(1.5) translateX(-8px); opacity: 1; }
+  100% { transform: scale(1.1) translateX(0); opacity: 1; } /* 回到拖拽时的 scale(1.1) 状态 */
+}
+
 
 /* 共用现代组件样式 */
 .modern-input {
