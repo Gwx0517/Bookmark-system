@@ -22,7 +22,7 @@ start-all:
     just start-frontend
 
 stop:
-    -mariadb-admin -u root -p123456 shutdown 2>/dev/null || true
+    -mariadb-admin -u root shutdown 2>/dev/null || true
     -pkill -f "spring-boot:run" 2>/dev/null || true
     -pkill -f "vite" 2>/dev/null || true
 
