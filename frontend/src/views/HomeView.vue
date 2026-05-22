@@ -9,9 +9,9 @@
       <!-- 侧边栏 -->
       <aside class="sidebar">
         <div class="sidebar-header">分类</div>
-        <ul class="cate-list-menu">
-          <!-- 所有书签项 -->
-          <li 
+        
+        <div class="sidebar-all-books">
+          <div 
             class="cate-item" 
             :class="{ active: selectedCategoryId === null }"
             @click="selectedCategoryId = null"
@@ -22,92 +22,100 @@
                 所有书签
               </span>
             </div>
-          </li>
-          
-          <!-- 具体分类项，支持拖拽放入与动画 -->
-          <li 
-            v-for="cate in cateList" 
-            :key="cate.id" 
-            class="cate-item"
-            :class="{ 
-              active: selectedCategoryId === cate.id,
-              'drag-over': dragHoverCategoryId === cate.id
-            }"
-            @click="selectedCategoryId = cate.id"
-            @dragover.prevent="onDragOver(cate.id)"
-            @dragleave="onDragLeave"
-            @drop="onDrop($event, cate.id)"
-          >
-            <div class="cate-content-wrapper">
-              <!-- 原本文本 -->
-              <span 
-                class="cate-name-text" 
-                :class="{ 'hide-text': dragHoverCategoryId === cate.id || eatingCategoryId === cate.id }"
-              >
-                <svg class="svg-icon menu-icon" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
-                {{ cate.name }}
-              </span>
-              
-              <!-- 像素吃豆人动画组件 -->
-              <div 
-                class="pacman-container" 
-                :class="{ 
-                  'show-pacman': dragHoverCategoryId === cate.id || eatingCategoryId === cate.id,
-                  'eating': eatingCategoryId === cate.id
-                }"
-              >
-                <svg class="pixel-pacman" viewBox="0 0 13 13" shape-rendering="crispEdges">
-                  <!-- 身体固定部分 -->
-                  <rect x="4" y="0" width="5" height="1" fill="#DDA142" />
-                  <rect x="2" y="1" width="9" height="1" fill="#DDA142" />
-                  <rect x="1" y="2" width="11" height="1" fill="#DDA142" />
-                  <rect x="0" y="3" width="13" height="1" fill="#DDA142" />
-                  <rect x="0" y="9" width="13" height="1" fill="#DDA142" />
-                  <rect x="1" y="10" width="11" height="1" fill="#DDA142" />
-                  <rect x="2" y="11" width="9" height="1" fill="#DDA142" />
-                  <rect x="4" y="12" width="5" height="1" fill="#DDA142" />
-                  
-                  <!-- 会根据张闭嘴动画隐藏/显示的嘴巴部分 -->
-                  <rect x="0" y="4" width="11" height="1" fill="#DDA142" />
-                  <rect x="11" y="4" width="2" height="1" class="pac-jaw-top" fill="#DDA142" />
-                  
-                  <rect x="0" y="5" width="8" height="1" fill="#DDA142" />
-                  <rect x="8" y="5" width="5" height="1" class="pac-jaw-top" fill="#DDA142" />
-                  
-                  <rect x="0" y="6" width="6" height="1" fill="#DDA142" />
-                  <rect x="6" y="6" width="7" height="1" class="pac-jaw-mid" fill="#DDA142" />
-                  
-                  <rect x="0" y="7" width="8" height="1" fill="#DDA142" />
-                  <rect x="8" y="7" width="5" height="1" class="pac-jaw-bottom" fill="#DDA142" />
-                  
-                  <rect x="0" y="8" width="11" height="1" fill="#DDA142" />
-                  <rect x="11" y="8" width="2" height="1" class="pac-jaw-bottom" fill="#DDA142" />
-                  
-                  <!-- 眼睛 -->
-                  <rect x="7" y="2" width="2" height="2" fill="#000" />
-                </svg>
-              </div>
-            </div>
+          </div>
+        </div>
 
-            <div class="cate-actions">
-              <span class="action-icon" @click.stop="openEditCate(cate)" title="编辑">
-                <svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
-              </span>
-              <span class="action-icon" @click.stop="delCate(cate.id)" title="删除">
-                <svg class="svg-icon" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-              </span>
-            </div>
-          </li>
-        </ul>
+        <div class="cate-tree-container">
+          <!-- 使用 Element Plus 树形组件实现任意嵌套与拖拽排序 -->
+          <el-tree
+            :data="cateTree"
+            node-key="id"
+            draggable
+            :allow-drop="() => true"
+            @node-drop="handleNodeDrop"
+            @node-drag-start="handleNodeDragStart"
+            @node-drag-end="handleNodeDragEnd"
+            default-expand-all
+            :expand-on-click-node="false"
+            class="custom-tree"
+          >
+            <template #default="{ node, data }">
+              <!-- 复用我们定制的像素吃豆人交互节点 -->
+              <div 
+                class="cate-item" 
+                :class="{ 
+                  active: selectedCategoryId === data.id,
+                  'drag-over': dragHoverCategoryId === data.id
+                }"
+                @click="selectedCategoryId = data.id"
+                @dragover.prevent="onDragOver(data.id)"
+                @dragleave="onDragLeave"
+                @drop="onDrop($event, data.id)"
+              >
+                <div class="cate-content-wrapper">
+                  <!-- 原本文本 -->
+                  <span 
+                    class="cate-name-text" 
+                    :class="{ 'hide-text': dragHoverCategoryId === data.id || eatingCategoryId === data.id }"
+                  >
+                    <svg class="svg-icon menu-icon" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+                    {{ data.name }}
+                  </span>
+                  
+                  <!-- 像素吃豆人动画组件 -->
+                  <div 
+                    class="pacman-container" 
+                    :class="{ 
+                      'show-pacman': dragHoverCategoryId === data.id || eatingCategoryId === data.id,
+                      'eating': eatingCategoryId === data.id
+                    }"
+                  >
+                    <svg class="pixel-pacman" viewBox="0 0 13 13" shape-rendering="crispEdges">
+                      <rect x="4" y="0" width="5" height="1" fill="#DDA142" />
+                      <rect x="2" y="1" width="9" height="1" fill="#DDA142" />
+                      <rect x="1" y="2" width="11" height="1" fill="#DDA142" />
+                      <rect x="0" y="3" width="13" height="1" fill="#DDA142" />
+                      <rect x="0" y="9" width="13" height="1" fill="#DDA142" />
+                      <rect x="1" y="10" width="11" height="1" fill="#DDA142" />
+                      <rect x="2" y="11" width="9" height="1" fill="#DDA142" />
+                      <rect x="4" y="12" width="5" height="1" fill="#DDA142" />
+                      <rect x="0" y="4" width="11" height="1" fill="#DDA142" />
+                      <rect x="11" y="4" width="2" height="1" class="pac-jaw-top" fill="#DDA142" />
+                      <rect x="0" y="5" width="8" height="1" fill="#DDA142" />
+                      <rect x="8" y="5" width="5" height="1" class="pac-jaw-top" fill="#DDA142" />
+                      <rect x="0" y="6" width="6" height="1" fill="#DDA142" />
+                      <rect x="6" y="6" width="7" height="1" class="pac-jaw-mid" fill="#DDA142" />
+                      <rect x="0" y="7" width="8" height="1" fill="#DDA142" />
+                      <rect x="8" y="7" width="5" height="1" class="pac-jaw-bottom" fill="#DDA142" />
+                      <rect x="0" y="8" width="11" height="1" fill="#DDA142" />
+                      <rect x="11" y="8" width="2" height="1" class="pac-jaw-bottom" fill="#DDA142" />
+                      <rect x="7" y="2" width="2" height="2" fill="#000" />
+                    </svg>
+                  </div>
+                </div>
+
+                <!-- 悬浮操作图标区 -->
+                <div class="cate-actions">
+                  <span class="action-icon" @click.stop="openAddSubCate(data.id)" title="添加子分类">
+                    <svg class="svg-icon" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                  </span>
+                  <span class="action-icon" @click.stop="openEditCate(data)" title="编辑名称">
+                    <svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                  </span>
+                </div>
+              </div>
+            </template>
+          </el-tree>
+        </div>
 
         <div class="sidebar-footer">
           <input 
             v-model="cateName" 
-            placeholder="新分类名称..." 
+            placeholder="新建根分类名称..." 
             class="modern-input"
-            @keyup.enter="addCate"
+            @keyup.enter="addCate(null)"
           />
-          <button class="primary-btn small-btn" @click="addCate">添加分类</button>
+          <button class="primary-btn small-btn" @click="addCate(null)">添加分类</button>
         </div>
       </aside>
 
@@ -146,9 +154,6 @@
                <span class="action-icon" @click="openEditBook(book)" title="编辑">
                  <svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
                </span>
-               <span class="action-icon" @click="delBook(book.id)" title="删除">
-                 <svg class="svg-icon" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
-               </span>
             </div>
           </div>
         </div>
@@ -161,6 +166,14 @@
     </div>
 
     <!-- 弹窗 -->
+    <el-dialog v-model="showAddSubCate" title="新建子分类" width="400px">
+      <input v-model="newSubCateName" class="modern-input full-width" placeholder="请输入子分类名称" @keyup.enter="saveAddSubCate" />
+      <template #footer>
+        <button class="outline-btn small-btn mr-10" @click="showAddSubCate = false">取消</button>
+        <button class="primary-btn small-btn" @click="saveAddSubCate">保存</button>
+      </template>
+    </el-dialog>
+
     <el-dialog v-model="showEditCate" title="编辑分类" width="400px">
       <input v-model="editCate.name" class="modern-input full-width" />
       <template #footer>
@@ -178,11 +191,11 @@
       </template>
     </el-dialog>
 
-    <!-- 右下角吃豆人垃圾桶 -->
+    <!-- 右下角吃豆人垃圾桶 (现在兼容删除分类和删除书签) -->
     <div 
       class="trash-container"
       :class="{
-        'dragging-active': isDraggingBookmark,
+        'dragging-active': isDraggingAny,
         'drag-over': dragHoverTrash,
         'eating': eatingTrash
       }"
@@ -191,7 +204,7 @@
       @drop="onTrashDrop"
     >
       <div class="trash-wrapper">
-        <!-- 像素垃圾桶 (常态) -->
+        <!-- 像素垃圾桶 -->
         <svg class="pixel-trash" :class="{ 'hide': dragHoverTrash || eatingTrash }" viewBox="0 0 13 13" shape-rendering="crispEdges">
           <rect x="4" y="2" width="5" height="1" fill="#bbbbbb" />
           <rect x="2" y="3" width="9" height="1" fill="#bbbbbb" />
@@ -201,8 +214,7 @@
           <rect x="5" y="5" width="1" height="5" fill="#bbbbbb" />
           <rect x="7" y="5" width="1" height="5" fill="#bbbbbb" />
         </svg>
-        
-        <!-- 镜像像素吃豆人 (觉醒态) -->
+        <!-- 镜像吃豆人 -->
         <svg class="pixel-pacman flipped" :class="{ 'show': dragHoverTrash || eatingTrash }" viewBox="0 0 13 13" shape-rendering="crispEdges">
           <rect x="4" y="0" width="5" height="1" fill="#DDA142" />
           <rect x="2" y="1" width="9" height="1" fill="#DDA142" />
@@ -212,7 +224,6 @@
           <rect x="1" y="10" width="11" height="1" fill="#DDA142" />
           <rect x="2" y="11" width="9" height="1" fill="#DDA142" />
           <rect x="4" y="12" width="5" height="1" fill="#DDA142" />
-          
           <rect x="0" y="4" width="11" height="1" fill="#DDA142" />
           <rect x="11" y="4" width="2" height="1" class="pac-jaw-top" fill="#DDA142" />
           <rect x="0" y="5" width="8" height="1" fill="#DDA142" />
@@ -233,7 +244,7 @@
 <script setup>
 import { ref, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
-import { ElMessage } from "element-plus";
+import { ElMessage, ElMessageBox } from "element-plus";
 import request from "../utils/request.js";
 
 const router = useRouter();
@@ -244,11 +255,16 @@ const userId = currentUser.id;
 
 // State
 const cateList = ref([]);
+const cateTree = ref([]);
 const bookList = ref([]);
 const selectedCategoryId = ref(null);
 
-// Drag & Drop Animation State
+// Drag & Drop State
 const isDraggingBookmark = ref(false);
+const isDraggingCategory = ref(false);
+const draggingCateId = ref(null);
+const isDraggingAny = computed(() => isDraggingBookmark.value || isDraggingCategory.value);
+
 const dragHoverCategoryId = ref(null);
 const eatingCategoryId = ref(null);
 
@@ -277,7 +293,71 @@ const filteredBookList = computed(() => {
   return bookList.value.filter(b => b.categoryId === selectedCategoryId.value);
 });
 
-// Drag and Drop Handlers
+// Category Tree Builder
+const buildTree = (list) => {
+  const map = {};
+  const tree = [];
+  list.forEach(node => {
+    map[node.id] = { ...node, children: [] };
+  });
+  list.forEach(node => {
+    if (node.parentId && map[node.parentId]) {
+      map[node.parentId].children.push(map[node.id]);
+    } else {
+      tree.push(map[node.id]);
+    }
+  });
+  // Sort
+  const sortByOrder = (a, b) => (a.sortOrder || 0) - (b.sortOrder || 0);
+  tree.sort(sortByOrder);
+  Object.values(map).forEach(n => n.children.sort(sortByOrder));
+  return tree;
+};
+
+// Tree Drag & Drop Handlers (for nested sorting)
+const handleNodeDragStart = (node, ev) => {
+  isDraggingCategory.value = true;
+  draggingCateId.value = node.data.id;
+};
+
+const handleNodeDragEnd = (node, dropNode, dropType, ev) => {
+  isDraggingCategory.value = false;
+  draggingCateId.value = null;
+  dragHoverTrash.value = false;
+};
+
+const handleNodeDrop = async (draggingNode, dropNode, dropType, ev) => {
+  // Compute flat updates array based on new cateTree structure
+  const flatUpdates = [];
+  let globalOrder = 0;
+  
+  const flatten = (nodes, parentId = null) => {
+    nodes.forEach(node => {
+      flatUpdates.push({
+        id: node.id,
+        name: node.name,
+        userId: node.userId,
+        parentId: parentId,
+        sortOrder: globalOrder++
+      });
+      if (node.children && node.children.length > 0) {
+        flatten(node.children, node.id);
+      }
+    });
+  };
+  
+  flatten(cateTree.value);
+  
+  try {
+    await request.post("/category/batchUpdate", flatUpdates);
+    // Silent success
+  } catch (e) {
+    ElMessage.error("排序保存失败，正在恢复");
+    loadData();
+  }
+};
+
+// Bookmark Drag & Drop Handlers
 const onDragStart = (event, book) => {
   event.dataTransfer.setData('text/plain', book.id);
   event.dataTransfer.effectAllowed = 'move';
@@ -293,7 +373,9 @@ const onDragEnd = (event) => {
 };
 
 const onDragOver = (cateId) => {
-  dragHoverCategoryId.value = cateId;
+  if (isDraggingBookmark.value) {
+    dragHoverCategoryId.value = cateId;
+  }
 };
 
 const onDragLeave = () => {
@@ -302,6 +384,10 @@ const onDragLeave = () => {
 
 const onDrop = async (event, targetCateId) => {
   dragHoverCategoryId.value = null;
+  
+  // 必须是拖拽的书签
+  if (!isDraggingBookmark.value) return;
+
   const bookIdStr = event.dataTransfer.getData('text/plain');
   if (!bookIdStr) return;
   
@@ -309,17 +395,13 @@ const onDrop = async (event, targetCateId) => {
   const book = bookList.value.find(b => b.id === bookId);
   
   if (book && book.categoryId !== targetCateId) {
-    // 触发吃豆人吞咽动画
     eatingCategoryId.value = targetCateId;
-    
-    // 延迟执行保存，等待动画结束
     setTimeout(async () => {
       eatingCategoryId.value = null; 
       book.categoryId = targetCateId; 
-      
       try {
         await request.post("/bookmark/add", book);
-        ElMessage.success("书签已移动");
+        ElMessage.success("书签已移入分类");
         loadData();
       } catch (e) {
         ElMessage.error("移动失败");
@@ -329,31 +411,51 @@ const onDrop = async (event, targetCateId) => {
   }
 };
 
+// Trash Bin Handler
 const onTrashDrop = async (event) => {
   dragHoverTrash.value = false;
-  const bookIdStr = event.dataTransfer.getData('text/plain');
-  if (!bookIdStr) return;
+
+  // 1. 处理分类的级联删除
+  if (isDraggingCategory.value && draggingCateId.value) {
+    const cateId = draggingCateId.value;
+    eatingTrash.value = true;
+    setTimeout(async () => {
+      eatingTrash.value = false;
+      try {
+        await request.post("/category/delete", { id: cateId });
+        ElMessage.success("分类已被斩草除根");
+        if (selectedCategoryId.value === cateId) {
+            selectedCategoryId.value = null;
+        }
+        loadData();
+      } catch (e) {
+        ElMessage.error("删除失败");
+        loadData();
+      }
+    }, 600);
+    return;
+  }
   
-  const bookId = parseInt(bookIdStr, 10);
-  
-  // 触发垃圾桶吞噬动画
-  eatingTrash.value = true;
-  
-  setTimeout(async () => {
-    eatingTrash.value = false; 
+  // 2. 处理书签的删除
+  if (isDraggingBookmark.value) {
+    const bookIdStr = event.dataTransfer.getData('text/plain');
+    if (!bookIdStr) return;
+    const bookId = parseInt(bookIdStr, 10);
     
-    // 乐观删除
-    bookList.value = bookList.value.filter(b => b.id !== bookId);
-    
-    try {
-      await request.post("/bookmark/delete", { id: bookId });
-      ElMessage.success("书签已粉碎");
-      loadData();
-    } catch (e) {
-      ElMessage.error("删除失败");
-      loadData(); 
-    }
-  }, 600);
+    eatingTrash.value = true;
+    setTimeout(async () => {
+      eatingTrash.value = false; 
+      bookList.value = bookList.value.filter(b => b.id !== bookId);
+      try {
+        await request.post("/bookmark/delete", { id: bookId });
+        ElMessage.success("书签已粉碎");
+        loadData();
+      } catch (e) {
+        ElMessage.error("删除失败");
+        loadData(); 
+      }
+    }, 600);
+  }
 };
 
 
@@ -362,22 +464,50 @@ const loadData = async () => {
   const c = await request.get(`/category/list?userId=${userId}`);
   const b = await request.get(`/bookmark/list?userId=${userId}`);
   cateList.value = c.data.data;
+  cateTree.value = buildTree(cateList.value);
   bookList.value = b.data.data;
 };
 
-const addCate = async () => {
-  if (!cateName.value.trim()) return;
-  await request.post("/category/add", { name: cateName.value, userId });
-  cateName.value = "";
-  loadData();
+// addCate 现在仅处理根分类的添加
+const addCate = async (parentId = null) => {
+  if (parentId === null) {
+    const name = cateName.value.trim();
+    if (!name) return;
+    await request.post("/category/add", { 
+      name, 
+      userId,
+      parentId: null,
+      sortOrder: 0
+    });
+    cateName.value = "";
+    loadData();
+  }
 };
 
-const delCate = async (id) => {
-  if (selectedCategoryId.value === id) {
-    selectedCategoryId.value = null;
+// --- 子分类添加逻辑 ---
+const showAddSubCate = ref(false);
+const newSubCateName = ref("");
+const newSubCateParentId = ref(null);
+
+const openAddSubCate = (parentId) => {
+  newSubCateParentId.value = parentId;
+  newSubCateName.value = "";
+  showAddSubCate.value = true;
+};
+
+const saveAddSubCate = async () => {
+  const name = newSubCateName.value.trim();
+  if (!name) {
+    ElMessage.warning("名称不能为空");
+    return;
   }
-  await request.post("/category/delete", { id });
-  ElMessage.success("分类已删除");
+  await request.post("/category/add", { 
+    name, 
+    userId,
+    parentId: newSubCateParentId.value,
+    sortOrder: 0
+  });
+  showAddSubCate.value = false;
   loadData();
 };
 
@@ -408,12 +538,6 @@ const addBook = async () => {
   loadData();
 };
 
-const delBook = async (id) => {
-  await request.post("/bookmark/delete", { id });
-  ElMessage.success("书签已删除");
-  loadData();
-};
-
 const openEditBook = (book) => {
   editBook.value = { ...book };
   showEditBook.value = true;
@@ -437,7 +561,6 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* 继承登录页的高级字体 */
 .home-app {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   height: 100vh;
@@ -452,7 +575,7 @@ onMounted(() => {
   display: inline-block;
   width: 12px;
   height: 12px;
-  background-color: #DDA142; /* 吃豆人黄 */
+  background-color: #DDA142;
   border-radius: 50%;
   margin-right: 8px;
 }
@@ -508,7 +631,7 @@ onMounted(() => {
 
 /* 侧边栏 */
 .sidebar {
-  width: 280px;
+  width: 320px; /* 稍微加宽以容纳树形缩进 */
   background-color: white;
   border-right: 1px solid rgba(0,0,0,0.06);
   display: flex;
@@ -523,17 +646,42 @@ onMounted(() => {
   letter-spacing: 1px;
   font-weight: 600;
 }
-.cate-list-menu {
-  list-style: none;
+.sidebar-all-books {
   padding: 0 10px;
-  margin: 0;
+}
+.cate-tree-container {
   flex: 1;
   overflow-y: auto;
+  padding: 10px;
 }
-.cate-item {
-  height: 48px; /* 统一高度，以更高的那个为准 */
-  padding: 0 15px; /* 取消上下 padding，靠 align-items 居中 */
+
+/* 覆盖 el-tree 默认样式使其隐形并支持全宽动画 */
+:deep(.custom-tree) {
+  background: transparent;
+}
+:deep(.el-tree-node__content) {
+  height: 48px;
+  background-color: transparent !important;
+  padding-right: 0;
   margin-bottom: 5px;
+  border-radius: 8px;
+}
+:deep(.el-tree-node__content:hover) {
+  background-color: transparent !important;
+}
+:deep(.el-tree-node__expand-icon) {
+  color: #aaaaaa;
+  font-size: 16px;
+  padding: 6px;
+}
+:deep(.el-tree-node__expand-icon.is-leaf) {
+  color: transparent;
+}
+
+.cate-item {
+  flex: 1;
+  height: 48px;
+  padding: 0 15px 0 5px; /* 右侧留白，左侧紧贴展开箭头 */
   border-radius: 8px;
   cursor: pointer;
   display: flex;
@@ -561,8 +709,8 @@ onMounted(() => {
   display: flex;
   align-items: center;
   position: relative;
-  overflow: hidden; /* 防止缩放导致的抖动溢出 */
-  height: 100%; /* 占满高度以保证居中对齐 */
+  overflow: hidden; 
+  height: 100%; 
 }
 .cate-name-text {
   flex: 1;
@@ -574,7 +722,6 @@ onMounted(() => {
   transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
   transform-origin: left center;
 }
-/* 当悬浮或正在吃时，隐藏文字，向左缩小滑动 */
 .cate-name-text.hide-text {
   opacity: 0;
   transform: scale(0.5) translateX(-20px);
@@ -587,38 +734,26 @@ onMounted(() => {
   transform: translateY(-50%) translateX(-20px) scale(0.5);
   opacity: 0;
   transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-  pointer-events: none; /* 穿透鼠标事件，保证 drop 触发 */
+  pointer-events: none; 
 }
-/* 悬浮时，吃豆人向右放大滑出 */
 .pacman-container.show-pacman {
   opacity: 1;
   transform: translateY(-50%) translateX(0) scale(1.3);
 }
-/* 放下时触发吃豆人前扑 */
 .pacman-container.eating {
   opacity: 1;
   animation: pounce 0.6s ease-in-out forwards;
 }
 
-/* 像素吃豆人 SVG 样式 */
 .pixel-pacman {
   width: 18px;
   height: 18px;
   display: block;
 }
-/* 默认张嘴状态，隐藏上下颚及缝隙 */
-.pac-jaw-top, .pac-jaw-bottom, .pac-jaw-mid {
-  opacity: 0; 
-}
-
-/* 吞咽动画：嘴巴开合 */
+.pac-jaw-top, .pac-jaw-bottom, .pac-jaw-mid { opacity: 0; }
 .eating .pixel-pacman .pac-jaw-top,
-.eating .pixel-pacman .pac-jaw-bottom {
-  animation: chomp-jaw 0.15s infinite alternate;
-}
-.eating .pixel-pacman .pac-jaw-mid {
-  animation: chomp-mid 0.15s infinite alternate;
-}
+.eating .pixel-pacman .pac-jaw-bottom { animation: chomp-jaw 0.15s infinite alternate; }
+.eating .pixel-pacman .pac-jaw-mid { animation: chomp-mid 0.15s infinite alternate; }
 
 @keyframes chomp-jaw {
   0%, 30% { opacity: 0; }
@@ -628,11 +763,10 @@ onMounted(() => {
   0%, 30% { opacity: 0; fill: #DDA142; }
   70%, 100% { opacity: 1; fill: #222; }
 }
-/* 吞咽前扑位移动画 (向右扑) */
 @keyframes pounce {
   0% { transform: translateY(-50%) translateX(0) scale(1.3); }
-  25% { transform: translateY(-50%) translateX(-5px) scale(1.3); } /* 蓄力向后 */
-  50% { transform: translateY(-50%) translateX(10px) scale(1.6); }  /* 向前猛扑 */
+  25% { transform: translateY(-50%) translateX(-5px) scale(1.3); } 
+  50% { transform: translateY(-50%) translateX(10px) scale(1.6); }  
   75% { transform: translateY(-50%) translateX(10px) scale(1.6); opacity: 1; }
   100% { transform: translateY(-50%) translateX(10px) scale(0.5); opacity: 0; }
 }
@@ -640,8 +774,8 @@ onMounted(() => {
 .cate-actions {
   display: flex;
   gap: 8px;
-  opacity: 0; /* 默认透明，避免 display:none 导致的布局高度塌陷 */
-  visibility: hidden; /* 防止不可见时还能点击 */
+  opacity: 0; 
+  visibility: hidden; 
   transition: opacity 0.2s;
 }
 .cate-item:hover .cate-actions {
@@ -688,7 +822,6 @@ onMounted(() => {
   align-items: center;
 }
 
-/* 顶部操作栏 */
 .book-add-bar {
   display: flex;
   gap: 15px;
@@ -708,11 +841,8 @@ onMounted(() => {
   display: flex;
   align-items: center;
 }
-.url-input {
-  flex: 1;
-}
+.url-input { flex: 1; }
 
-/* 书签网格 */
 .book-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -734,9 +864,7 @@ onMounted(() => {
   transform: translateY(-2px);
   box-shadow: 0 8px 20px rgba(0,0,0,0.08);
 }
-.book-card:active {
-  cursor: grabbing;
-}
+.book-card:active { cursor: grabbing; }
 .drag-handle {
   color: #cccccc;
   font-size: 18px;
@@ -760,9 +888,7 @@ onMounted(() => {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.book-title:hover {
-  text-decoration: underline;
-}
+.book-title:hover { text-decoration: underline; }
 .book-url-text {
   font-size: 12px;
   color: #999999;
@@ -770,12 +896,6 @@ onMounted(() => {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.book-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
 .empty-state {
   display: flex;
   flex-direction: column;
@@ -807,7 +927,7 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-  opacity: 0.5; /* 默认半透明 */
+  opacity: 0.5; 
   z-index: 100;
   border: 2px solid transparent;
 }
@@ -819,8 +939,8 @@ onMounted(() => {
 }
 .trash-container.drag-over {
   transform: scale(1.3);
-  background-color: #fcfcfc; /* 稍亮一点 */
-  border-color: #DDA142; /* 黄色高亮 */
+  background-color: #fcfcfc; 
+  border-color: #DDA142; 
   box-shadow: 0 8px 25px rgba(221, 161, 66, 0.3);
 }
 .trash-container.eating {
@@ -856,25 +976,22 @@ onMounted(() => {
   height: 56px;
   position: absolute;
   opacity: 0;
-  transform: scale(0.2) scaleX(-1); /* 默认隐藏且翻转 */
+  transform: scale(0.2) scaleX(-1); 
   transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 .trash-wrapper .pixel-pacman.show {
   opacity: 1;
-  transform: scale(1.3) scaleX(-1); /* 翻转使得吃豆人朝左 */
+  transform: scale(1.3) scaleX(-1); 
 }
 
-/* 垃圾桶向左扑咬动画 */
 @keyframes pounce-left {
   0% { transform: scale(1.3) translateX(0); }
-  25% { transform: scale(1.3) translateX(4px); } /* 蓄力向右 */
-  50% { transform: scale(1.5) translateX(-8px); }  /* 向左前扑咬 */
+  25% { transform: scale(1.3) translateX(4px); } 
+  50% { transform: scale(1.5) translateX(-8px); }  
   75% { transform: scale(1.5) translateX(-8px); opacity: 1; }
-  100% { transform: scale(1.1) translateX(0); opacity: 1; } /* 回到拖拽时的 scale(1.1) 状态 */
+  100% { transform: scale(1.1) translateX(0); opacity: 1; } 
 }
 
-
-/* 共用现代组件样式 */
 .modern-input {
   padding: 12px 20px;
   background-color: #EAEAEA;
@@ -894,7 +1011,6 @@ onMounted(() => {
   width: 100%;
   box-sizing: border-box;
 }
-
 .primary-btn {
   background-color: #333333;
   color: #ffffff;
