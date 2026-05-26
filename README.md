@@ -30,6 +30,13 @@ just start-db      # 仅启动本地数据库 (数据文件储存在当前目录
 just start-backend # 仅启动后端
 just start-frontend# 仅启动前端
 just fmt           # 全栈统一格式化代码 (包含后端 Java、前端 Vue/TS 和 Nix 脚本)
+
+#对数据库进行了修改，在新增导入导出功能之前跑起过项目的需要执行一下命令
+mariadb --socket .local/mysql/mysql.sock -u root bookmark_system -e "
+     ALTER TABLE bookmark MODIFY COLUMN title VARCHAR(500) NOT NULL;
+     ALTER TABLE bookmark MODIFY COLUMN url VARCHAR(2000) NOT NULL;
+     ALTER TABLE category MODIFY COLUMN name VARCHAR(200) NOT NULL;
+     "
 ```
 
 ---
