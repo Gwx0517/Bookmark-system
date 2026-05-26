@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS `user` (
 
 CREATE TABLE IF NOT EXISTS `category` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
-    `name` VARCHAR(50) NOT NULL,
+    `name` VARCHAR(200) NOT NULL,
     `user_id` BIGINT NOT NULL,
     `parent_id` BIGINT DEFAULT NULL,
     `sort_order` INT DEFAULT 0
@@ -14,8 +14,8 @@ CREATE TABLE IF NOT EXISTS `category` (
 
 CREATE TABLE IF NOT EXISTS `bookmark` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
-    `title` VARCHAR(100) NOT NULL,
-    `url` VARCHAR(255) NOT NULL,
+    `title` VARCHAR(500) NOT NULL,
+    `url` VARCHAR(2000) NOT NULL,
     `category_id` BIGINT,
     `user_id` BIGINT NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

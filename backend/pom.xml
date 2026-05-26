@@ -47,6 +47,13 @@
             <version>4.4.0</version>
         </dependency>
 
+        <!-- Jsoup（HTML 解析，用于导入书签） -->
+        <dependency>
+            <groupId>org.jsoup</groupId>
+            <artifactId>jsoup</artifactId>
+            <version>1.17.2</version>
+        </dependency>
+
         <!-- Lombok -->
         <dependency>
             <groupId>org.projectlombok</groupId>

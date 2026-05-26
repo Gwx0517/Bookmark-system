@@ -29,3 +29,5 @@ result-*
 .env.local
 # Logs
 *.log
+# Agent instructions
+AGENTS.md

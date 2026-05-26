@@ -13,7 +13,7 @@ public class Category {
 
     private String name;
     private Long userId;
-    
+
     private Long parentId;
     private Integer sortOrder;
 }

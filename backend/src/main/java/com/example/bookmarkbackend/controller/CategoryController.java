@@ -19,10 +19,12 @@ public class CategoryController {
 
     @GetMapping("/list")
     public Result<List<Category>> list(Long userId) {
-        List<Category> list = categoryService.lambdaQuery()
-            .eq(Category::getUserId, userId)
-            .orderByAsc(Category::getSortOrder)
-            .list();
+        List<Category> list =
+                categoryService
+                        .lambdaQuery()
+                        .eq(Category::getUserId, userId)
+                        .orderByAsc(Category::getSortOrder)
+                        .list();
         return Result.success(list);
     }
 
@@ -44,23 +46,20 @@ public class CategoryController {
     public Result delete(@RequestBody Category category) {
         List<Long> idsToDelete = new ArrayList<>();
         collectCategoryIdsRecursive(category.getId(), idsToDelete);
-        
+
         if (!idsToDelete.isEmpty()) {
-            bookmarkService.lambdaUpdate()
-                .in(Bookmark::getCategoryId, idsToDelete)
-                .remove();
-            
+            bookmarkService.lambdaUpdate().in(Bookmark::getCategoryId, idsToDelete).remove();
+
             categoryService.removeByIds(idsToDelete);
         }
-        
+
         return Result.success();
     }
-    
+
     private void collectCategoryIdsRecursive(Long parentId, List<Long> ids) {
         ids.add(parentId);
-        List<Category> children = categoryService.lambdaQuery()
-            .eq(Category::getParentId, parentId)
-            .list();
+        List<Category> children =
+                categoryService.lambdaQuery().eq(Category::getParentId, parentId).list();
         for (Category child : children) {
             collectCategoryIdsRecursive(child.getId(), ids);
         }
